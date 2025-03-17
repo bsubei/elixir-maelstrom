@@ -1,6 +1,6 @@
-/target
-/store
-/maelstrom
+**/target
+**/store
+**/maelstrom
 
 # Devenv
 .devenv*
