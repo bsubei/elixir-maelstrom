@@ -21,6 +21,8 @@
   languages.elixir = {
     enable = true;
   };
+  languages.erlang.enable = true;
+
 
 
   # https://devenv.sh/processes/

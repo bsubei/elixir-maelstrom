@@ -98,15 +98,21 @@ defmodule EchoServer.Message do
     end
 
     defmodule InitOk do
-      @all_keys [:type, :in_reply_to]
+      @all_keys [:type, :msg_id, :in_reply_to]
       @enforce_keys @all_keys
       @derive [Poison.Encoder]
       defstruct @all_keys
 
       @type t :: %__MODULE__{
               type: String.t(),
+              msg_id: Types.msg_id_t(),
               in_reply_to: Types.msg_id_t()
             }
+
+      @spec new(Types.msg_id_t()) :: t()
+      def new(in_reply_to) do
+        %__MODULE__{type: "init_ok", msg_id: 0, in_reply_to: in_reply_to}
+      end
     end
 
     defmodule Echo do
