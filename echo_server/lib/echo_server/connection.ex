@@ -30,7 +30,7 @@ defmodule EchoServer.Connection do
   def init(init_arg) do
     state = %__MODULE__{
       socket: Map.get(init_arg, :socket),
-      # Use the :gen_tcp.send by default. This is only specified by tests.
+      # Use the :gen_tcp.send by default. send_fn is only specified by tests to mock out the tcp send.
       send_fn: Map.get(init_arg, :send_fn, &:gen_tcp.send/2)
     }
 
