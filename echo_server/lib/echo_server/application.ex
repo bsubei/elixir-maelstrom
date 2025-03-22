@@ -7,10 +7,10 @@ defmodule EchoServer.Application do
 
   @impl true
   def start(_type, _args) do
-    port = Application.get_env(:echo, :port)
+    # port = Application.get_env(:echo)
 
     children = [
-      {EchoServer.ConnectionManager, port: port}
+      EchoServer.Server
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

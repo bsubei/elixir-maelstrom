@@ -25,12 +25,16 @@ defmodule EchoServer.Message do
 
         iex> iodata = ~s({"src":"c0","dest":"n1","body":{"type":"error","text":"dunno","in_reply_to":2,"code":42}})
         iex> %EchoServer.Message{src: "c0", dest: "n1", body: %EchoServer.Message.Body.Error{type: "error", in_reply_to: 2, code: 42, text: "dunno"}} = EchoServer.Message.decode(iodata)
+        iex> iodata == EchoServer.Message.encode(EchoServer.Message.decode(iodata))
+        true
 
   """
   @spec decode(iodata()) :: __MODULE__.t()
   def decode(input) do
     # First decode to a plain map with atom keys so we can pass them into struct().
-    map = Poison.decode!(input, keys: :atoms!)
+    # map = Poison.decode!(input, keys: :atoms!)
+    # TODO this is a giant memory leak problem (allocating atoms based on arbitrary string input)! I've spent too much time already on parsing so I'll leave this for now. Eventually, get the above form to work correctly without getting those inconsistent errors.
+    map = Poison.decode!(input, keys: :atoms)
 
     # Then manually create the body struct with the required fields
     body_map = map[:body]
@@ -48,8 +52,12 @@ defmodule EchoServer.Message do
 
         iex> msg = %EchoServer.Message{src: "c0", dest: "n1", body: %EchoServer.Message.Body.Error{type: "error", in_reply_to: 2, code: 42, text: "dunno"}}
         iex> ~s({"src":"c0","dest":"n1","body":{"type":"error","text":"dunno","in_reply_to":2,"code":42}}) = EchoServer.Message.encode(msg)
+        iex> msg == EchoServer.Message.decode(EchoServer.Message.encode(msg))
+        true
         iex> msg = %EchoServer.Message{src: "c0", dest: "n1", body: %EchoServer.Message.Body.Echo{type: "echo", echo: "well hello there", msg_id: 555}}
         iex> ~s({"src":"c0","dest":"n1","body":{"type":"echo","msg_id":555,"echo":"well hello there"}}) = EchoServer.Message.encode(msg)
+        iex> msg == EchoServer.Message.decode(EchoServer.Message.encode(msg))
+        true
 
   """
   @spec encode(__MODULE__.t()) :: binary()

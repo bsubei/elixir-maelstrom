@@ -15,8 +15,8 @@ defmodule EchoServer.MixProject do
   def application do
     [
       extra_applications: [:logger],
-      mod: {EchoServer.Application, []},
-      env: [port: 8080]
+      mod: {EchoServer.Application, []}
+      # env: [port: 8080]
     ]
   end
 
