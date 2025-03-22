@@ -1,7 +1,7 @@
-defmodule Echo.ConnectionManager do
+defmodule EchoServer.ConnectionManager do
   use GenServer
   require Logger
-  alias Echo.Connection
+  alias EchoServer.Connection
 
   @type t :: %__MODULE__{listen_socket: :gen_tcp.socket()}
   defstruct [:listen_socket]
@@ -29,7 +29,7 @@ defmodule Echo.ConnectionManager do
     # Create an "active" listening socket (i.e. bind to that port) and start attempting to accept incoming connections.
     case :gen_tcp.listen(port, listen_options) do
       {:ok, listen_socket} ->
-        Logger.info("Started Echo server on port #{port}")
+        Logger.info("Started EchoServer on port #{port}")
         # Send an :accept message so we start accepting connections once we exit this init().
         send(self(), :accept)
         {:ok, %__MODULE__{listen_socket: listen_socket}}

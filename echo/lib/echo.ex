@@ -1,6 +1,6 @@
-defmodule Echo do
+defmodule EchoServer do
   @moduledoc """
-  Documentation for `Echo`.
+  Documentation for `EchoServer`.
   """
 
   @doc """
@@ -8,7 +8,7 @@ defmodule Echo do
 
   ## Examples
 
-      iex> Echo.hello()
+      iex> EchoServer.hello()
       :world
 
   """

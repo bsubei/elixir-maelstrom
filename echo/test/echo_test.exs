@@ -1,4 +1,4 @@
-defmodule EchoTest do
+defmodule EchoServerTest do
   use ExUnit.Case
-  doctest Echo.Message
+  doctest EchoServer.Message
 end

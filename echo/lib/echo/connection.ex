@@ -1,4 +1,4 @@
-defmodule Echo.Connection do
+defmodule EchoServer.Connection do
   use GenServer
   require Logger
 

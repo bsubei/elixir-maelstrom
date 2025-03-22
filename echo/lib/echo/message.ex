@@ -1,5 +1,5 @@
 # TODO pull this out into its own package(?) so I can eventually reuse it across different server implementations.
-defmodule Echo.Message do
+defmodule EchoServer.Message do
   require Logger
 
   defmodule Types do
@@ -112,10 +112,10 @@ defmodule Echo.Message do
     ## Examples
 
         iex> iodata = ~s({"src":"c0","dest":"n1","body":{"type":"error","text":"dunno","in_reply_to":2,"code":42}})
-        iex> %Echo.Message{src: "c0", dest: "n1", body: %Echo.Message.Body.Error{type: "error", in_reply_to: 2, code: 42, text: "dunno"}} = Echo.Message.decode(iodata)
+        iex> %EchoServer.Message{src: "c0", dest: "n1", body: %EchoServer.Message.Body.Error{type: "error", in_reply_to: 2, code: 42, text: "dunno"}} = EchoServer.Message.decode(iodata)
 
   """
-  @spec decode(iodata()) :: Echo.Message.t()
+  @spec decode(iodata()) :: EchoServer.Message.t()
   def decode(input) do
     # First decode to a plain map with atom keys so we can pass them into struct().
     map = Poison.decode!(input, keys: :atoms!)
@@ -134,13 +134,13 @@ defmodule Echo.Message do
 
     ## Examples
 
-        iex> msg = %Echo.Message{src: "c0", dest: "n1", body: %Echo.Message.Body.Error{type: "error", in_reply_to: 2, code: 42, text: "dunno"}}
-        iex> ~s({"src":"c0","dest":"n1","body":{"type":"error","text":"dunno","in_reply_to":2,"code":42}}) = Echo.Message.encode(msg)
-        iex> msg = %Echo.Message{src: "c0", dest: "n1", body: %Echo.Message.Body.Echo{type: "echo", echo: "well hello there", msg_id: 555}}
-        iex> ~s({"src":"c0","dest":"n1","body":{"type":"echo","msg_id":555,"echo":"well hello there"}}) = Echo.Message.encode(msg)
+        iex> msg = %EchoServer.Message{src: "c0", dest: "n1", body: %EchoServer.Message.Body.Error{type: "error", in_reply_to: 2, code: 42, text: "dunno"}}
+        iex> ~s({"src":"c0","dest":"n1","body":{"type":"error","text":"dunno","in_reply_to":2,"code":42}}) = EchoServer.Message.encode(msg)
+        iex> msg = %EchoServer.Message{src: "c0", dest: "n1", body: %EchoServer.Message.Body.Echo{type: "echo", echo: "well hello there", msg_id: 555}}
+        iex> ~s({"src":"c0","dest":"n1","body":{"type":"echo","msg_id":555,"echo":"well hello there"}}) = EchoServer.Message.encode(msg)
 
   """
-  @spec encode(Echo.Message.t()) :: binary()
+  @spec encode(EchoServer.Message.t()) :: binary()
   def encode(message) do
     Poison.encode!(message)
   end

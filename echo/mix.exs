@@ -1,4 +1,4 @@
-defmodule Echo.MixProject do
+defmodule EchoServer.MixProject do
   use Mix.Project
 
   def project do
@@ -15,7 +15,7 @@ defmodule Echo.MixProject do
   def application do
     [
       extra_applications: [:logger],
-      mod: {Echo.Application, []},
+      mod: {EchoServer.Application, []},
       env: [port: 8080]
     ]
   end
