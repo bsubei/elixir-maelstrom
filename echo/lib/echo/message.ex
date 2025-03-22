@@ -18,6 +18,45 @@ defmodule EchoServer.Message do
           body: Body.t()
         }
 
+  @doc ~S"""
+    Decodes the given JSON-encoded string into a Message object.
+
+    ## Examples
+
+        iex> iodata = ~s({"src":"c0","dest":"n1","body":{"type":"error","text":"dunno","in_reply_to":2,"code":42}})
+        iex> %EchoServer.Message{src: "c0", dest: "n1", body: %EchoServer.Message.Body.Error{type: "error", in_reply_to: 2, code: 42, text: "dunno"}} = EchoServer.Message.decode(iodata)
+
+  """
+  @spec decode(iodata()) :: __MODULE__.t()
+  def decode(input) do
+    # First decode to a plain map with atom keys so we can pass them into struct().
+    map = Poison.decode!(input, keys: :atoms!)
+
+    # Then manually create the body struct with the required fields
+    body_map = map[:body]
+    body_type = __MODULE__.Body.type_str_to_module(body_map[:type])
+    body_struct = struct(body_type, body_map)
+
+    # Create the final struct with all required fields
+    struct(__MODULE__, src: map[:src], dest: map[:dest], body: body_struct)
+  end
+
+  @doc ~S"""
+    Encodes the given Message object into a JSON-encoded string.
+
+    ## Examples
+
+        iex> msg = %EchoServer.Message{src: "c0", dest: "n1", body: %EchoServer.Message.Body.Error{type: "error", in_reply_to: 2, code: 42, text: "dunno"}}
+        iex> ~s({"src":"c0","dest":"n1","body":{"type":"error","text":"dunno","in_reply_to":2,"code":42}}) = EchoServer.Message.encode(msg)
+        iex> msg = %EchoServer.Message{src: "c0", dest: "n1", body: %EchoServer.Message.Body.Echo{type: "echo", echo: "well hello there", msg_id: 555}}
+        iex> ~s({"src":"c0","dest":"n1","body":{"type":"echo","msg_id":555,"echo":"well hello there"}}) = EchoServer.Message.encode(msg)
+
+  """
+  @spec encode(__MODULE__.t()) :: binary()
+  def encode(message) do
+    Poison.encode!(message)
+  end
+
   defmodule Body do
     @type t :: Init.t() | InitOk.t() | Echo.t() | EchoOk.t() | Error.t()
 
@@ -27,11 +66,11 @@ defmodule EchoServer.Message do
     @spec type_str_to_module(String.t()) :: t()
     def type_str_to_module(type) do
       case type do
-        "init" -> Body.Init
-        "init_ok" -> Body.InitOk
-        "echo" -> Body.Echo
-        "echo_ok" -> Body.EchoOk
-        "error" -> Body.Error
+        "init" -> __MODULE__.Init
+        "init_ok" -> __MODULE__.InitOk
+        "echo" -> __MODULE__.Echo
+        "echo_ok" -> __MODULE__.EchoOk
+        "error" -> __MODULE__.Error
         _ -> raise "Unknown message type: #{type}"
       end
     end
@@ -104,44 +143,5 @@ defmodule EchoServer.Message do
               text: String.t()
             }
     end
-  end
-
-  @doc ~S"""
-    Decodes the given JSON-encoded string into a Message object.
-
-    ## Examples
-
-        iex> iodata = ~s({"src":"c0","dest":"n1","body":{"type":"error","text":"dunno","in_reply_to":2,"code":42}})
-        iex> %EchoServer.Message{src: "c0", dest: "n1", body: %EchoServer.Message.Body.Error{type: "error", in_reply_to: 2, code: 42, text: "dunno"}} = EchoServer.Message.decode(iodata)
-
-  """
-  @spec decode(iodata()) :: EchoServer.Message.t()
-  def decode(input) do
-    # First decode to a plain map with atom keys so we can pass them into struct().
-    map = Poison.decode!(input, keys: :atoms!)
-
-    # Then manually create the body struct with the required fields
-    body_map = map[:body]
-    body_type = Body.type_str_to_module(body_map[:type])
-    body_struct = struct(body_type, body_map)
-
-    # Create the final struct with all required fields
-    struct(__MODULE__, src: map[:src], dest: map[:dest], body: body_struct)
-  end
-
-  @doc ~S"""
-    Encodes the given Message object into a JSON-encoded string.
-
-    ## Examples
-
-        iex> msg = %EchoServer.Message{src: "c0", dest: "n1", body: %EchoServer.Message.Body.Error{type: "error", in_reply_to: 2, code: 42, text: "dunno"}}
-        iex> ~s({"src":"c0","dest":"n1","body":{"type":"error","text":"dunno","in_reply_to":2,"code":42}}) = EchoServer.Message.encode(msg)
-        iex> msg = %EchoServer.Message{src: "c0", dest: "n1", body: %EchoServer.Message.Body.Echo{type: "echo", echo: "well hello there", msg_id: 555}}
-        iex> ~s({"src":"c0","dest":"n1","body":{"type":"echo","msg_id":555,"echo":"well hello there"}}) = EchoServer.Message.encode(msg)
-
-  """
-  @spec encode(EchoServer.Message.t()) :: binary()
-  def encode(message) do
-    Poison.encode!(message)
   end
 end
