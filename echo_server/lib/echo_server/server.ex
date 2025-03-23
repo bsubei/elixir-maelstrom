@@ -68,7 +68,6 @@ defmodule EchoServer.Server do
 
     data = Message.encode(message)
     log("SENDING REPLY: #{data}")
-    # :ok = IO.puts(:stderr, data)
     :ok = IO.puts(:stdio, data)
     update_in(state.node_state.current_msg_id, &(&1 + 1))
   end
@@ -90,7 +89,7 @@ defmodule EchoServer.Server do
         node_ids = message.body.node_ids
 
         reply = %Message{
-          src: node_id,
+          src: message.dest,
           dest: message.src,
           body: Body.InitOk.new(message.body.msg_id)
         }
@@ -101,8 +100,14 @@ defmodule EchoServer.Server do
         state = put_in(state.node_state.node_id, node_id)
         put_in(state.node_state.node_ids, node_ids)
 
-      %Body.Echo{} ->
-        log("GOT ECHO MESSAGE")
+      %Body.Echo{echo: echo} ->
+        reply = %Message{
+          src: message.dest,
+          dest: message.src,
+          body: Body.EchoOk.new(echo, message.body.msg_id)
+        }
+
+        send_message(state, reply)
     end
   end
 end

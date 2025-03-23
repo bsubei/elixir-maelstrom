@@ -129,10 +129,8 @@ defmodule EchoServer.Message do
     end
 
     defmodule EchoOk do
-      @mandatory_keys [:type, :echo, :in_reply_to]
-      @optional_keys [msg_id: nil]
-      @all_keys @mandatory_keys ++ @optional_keys
-      @enforce_keys @mandatory_keys
+      @all_keys [:type, :echo, :in_reply_to, :msg_id]
+      @enforce_keys @all_keys
       @derive [Poison.Encoder]
       defstruct @all_keys
 
@@ -140,8 +138,13 @@ defmodule EchoServer.Message do
               type: String.t(),
               echo: String.t(),
               in_reply_to: Types.msg_id_t(),
-              msg_id: Types.msg_id_t() | nil
+              msg_id: Types.msg_id_t()
             }
+
+      @spec new(String.t(), Types.msg_id_t()) :: t()
+      def new(echo, in_reply_to) do
+        %__MODULE__{type: "echo_ok", echo: echo, msg_id: 0, in_reply_to: in_reply_to}
+      end
     end
 
     defmodule Error do
