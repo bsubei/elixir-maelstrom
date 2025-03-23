@@ -24,3 +24,6 @@ echo-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# escript file
+echo
