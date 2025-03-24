@@ -2,6 +2,8 @@
 **/store
 **/maelstrom
 
+.elixir_ls/*
+
 # Devenv
 .devenv*
 devenv.local.nix

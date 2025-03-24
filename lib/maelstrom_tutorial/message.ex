@@ -1,5 +1,4 @@
-# TODO pull this out into its own package(?) so I can eventually reuse it across different server implementations.
-defmodule EchoServer.Message do
+defmodule MaelstromTutorial.Message do
   require Logger
 
   defmodule Types do
@@ -24,8 +23,8 @@ defmodule EchoServer.Message do
     ## Examples
 
         iex> iodata = ~s({"src":"c0","dest":"n1","body":{"type":"error","text":"dunno","in_reply_to":2,"code":42}})
-        iex> %EchoServer.Message{src: "c0", dest: "n1", body: %EchoServer.Message.Body.Error{type: "error", in_reply_to: 2, code: 42, text: "dunno"}} = EchoServer.Message.decode(iodata)
-        iex> iodata == EchoServer.Message.encode(EchoServer.Message.decode(iodata))
+        iex> %MaelstromTutorial.Message{src: "c0", dest: "n1", body: %MaelstromTutorial.Message.Body.Error{type: "error", in_reply_to: 2, code: 42, text: "dunno"}} = MaelstromTutorial.Message.decode(iodata)
+        iex> iodata == MaelstromTutorial.Message.encode(MaelstromTutorial.Message.decode(iodata))
         true
 
   """
@@ -50,13 +49,13 @@ defmodule EchoServer.Message do
 
     ## Examples
 
-        iex> msg = %EchoServer.Message{src: "c0", dest: "n1", body: %EchoServer.Message.Body.Error{type: "error", in_reply_to: 2, code: 42, text: "dunno"}}
-        iex> ~s({"src":"c0","dest":"n1","body":{"type":"error","text":"dunno","in_reply_to":2,"code":42}}) = EchoServer.Message.encode(msg)
-        iex> msg == EchoServer.Message.decode(EchoServer.Message.encode(msg))
+        iex> msg = %MaelstromTutorial.Message{src: "c0", dest: "n1", body: %MaelstromTutorial.Message.Body.Error{type: "error", in_reply_to: 2, code: 42, text: "dunno"}}
+        iex> ~s({"src":"c0","dest":"n1","body":{"type":"error","text":"dunno","in_reply_to":2,"code":42}}) = MaelstromTutorial.Message.encode(msg)
+        iex> msg == MaelstromTutorial.Message.decode(MaelstromTutorial.Message.encode(msg))
         true
-        iex> msg = %EchoServer.Message{src: "c0", dest: "n1", body: %EchoServer.Message.Body.Echo{type: "echo", echo: "well hello there", msg_id: 555}}
-        iex> ~s({"src":"c0","dest":"n1","body":{"type":"echo","msg_id":555,"echo":"well hello there"}}) = EchoServer.Message.encode(msg)
-        iex> msg == EchoServer.Message.decode(EchoServer.Message.encode(msg))
+        iex> msg = %MaelstromTutorial.Message{src: "c0", dest: "n1", body: %MaelstromTutorial.Message.Body.Echo{type: "echo", echo: "well hello there", msg_id: 555}}
+        iex> ~s({"src":"c0","dest":"n1","body":{"type":"echo","msg_id":555,"echo":"well hello there"}}) = MaelstromTutorial.Message.encode(msg)
+        iex> msg == MaelstromTutorial.Message.decode(MaelstromTutorial.Message.encode(msg))
         true
 
   """

@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 MAELSTROM="./maelstrom/maelstrom"
 BINARY="./echo"

@@ -1,7 +1,7 @@
-defmodule EchoServer.Server do
-  alias EchoServer.Message
-  alias EchoServer.Message.Body
-  alias EchoServer.Node
+defmodule MaelstromTutorial.EchoServer.Server do
+  alias MaelstromTutorial.Message
+  alias MaelstromTutorial.Message.Body
+  alias MaelstromTutorial.EchoServer.Node
   use GenServer
 
   # TODO use a byte buffer to handle incomplete messages.
@@ -11,18 +11,15 @@ defmodule EchoServer.Server do
   @type t :: %__MODULE__{node_state: Node.t()}
 
   def main(_args) do
-    # TODO having a supervisor is a good thing, so it doesn't bring down the whole thing, but maelstrom is not showing any stderr when these processes crash. So I'm tempted to just remove the supervisor entirely.
     # children = [
-    #   # EchoServer.Server
-    #   Supervisor.child_spec(EchoServer.Server, restart: :temporary)
+    #   MaelstromTutorial.EchoServer.Server
+    #   # Supervisor.child_spec(MaelstromTutorial.EchoServer.Server, restart: :temporary)
     # ]
-    # opts = [strategy: :one_for_one, name: EchoServer.Supervisor]
+
+    # opts = [strategy: :one_for_one, name: MaelstromTutorial.EchoServer.Supervisor]
     # Supervisor.start_link(children, opts)
 
-    # TODO the stderr not showing through maelstrom has nothing to do with the supervision tree. It could
-
     {:ok, pid} = __MODULE__.start_link([])
-
     read_stdin_forever(pid)
   end
 
@@ -40,7 +37,7 @@ defmodule EchoServer.Server do
 
   @impl true
   def init(_) do
-    log("Starting up EchoServer")
+    log("Starting up MaelstromTutorial EchoServer")
     {:ok, %__MODULE__{node_state: Node.new()}}
   end
 

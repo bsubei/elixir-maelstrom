@@ -1,5 +1,5 @@
-defmodule EchoServer.Node do
-  alias EchoServer.Message.Types
+defmodule MaelstromTutorial.EchoServer.Node do
+  alias MaelstromTutorial.Message.Types
 
   @all_keys [:node_id, :node_ids, :current_msg_id]
   @enforce_keys @all_keys

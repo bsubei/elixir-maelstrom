@@ -1,4 +1,4 @@
-defmodule EchoServer.MixProject do
+defmodule MaelstromTutorial.MixProject do
   use Mix.Project
 
   def project do
@@ -8,7 +8,7 @@ defmodule EchoServer.MixProject do
       elixir: "~> 1.17",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      escript: [main_module: EchoServer.Server, embed_elixir: true]
+      escript: [main_module: MaelstromTutorial.EchoServer.Server, embed_elixir: true]
     ]
   end
 
