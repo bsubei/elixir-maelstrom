@@ -77,6 +77,11 @@ defmodule MaelstromTutorial.Message do
         "init_ok" -> __MODULE__.InitOk
         "echo" -> __MODULE__.Echo
         "echo_ok" -> __MODULE__.EchoOk
+        "topology" -> __MODULE__.Topology
+        "broadcast" -> __MODULE__.Broadcast
+        "broadcast_ok" -> __MODULE__.BroadcastOk
+        "read" -> __MODULE__.Read
+        "read_ok" -> __MODULE__.ReadOk
         "error" -> __MODULE__.Error
         _ -> raise "Unknown message type: #{type}"
       end
@@ -154,7 +159,7 @@ defmodule MaelstromTutorial.Message do
 
       @type t :: %__MODULE__{
               type: String.t(),
-              topology: list(Types.node_id_t()),
+              topology: %{Types.node_id_t() => list(Types.node_id_t())},
               msg_id: Types.msg_id_t()
             }
     end
@@ -228,12 +233,12 @@ defmodule MaelstromTutorial.Message do
 
       @type t :: %__MODULE__{
               type: String.t(),
-              messages: list(term()),
+              messages: list(integer()),
               in_reply_to: Types.msg_id_t(),
               msg_id: Types.msg_id_t()
             }
 
-      @spec new(list(term()), Types.msg_id_t()) :: t()
+      @spec new(list(integer()), Types.msg_id_t()) :: t()
       def new(messages, in_reply_to) do
         %__MODULE__{type: "read_ok", messages: messages, msg_id: 0, in_reply_to: in_reply_to}
       end
