@@ -1,6 +1,6 @@
 **/target
 **/store
-**/maelstrom
+maelstrom*
 
 .elixir_ls/*
 
