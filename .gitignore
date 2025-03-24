@@ -1,6 +1,7 @@
 **/target
 **/store
-maelstrom*
+maelstrom/*
+maelstrom.*
 
 .elixir_ls/*
 
@@ -45,5 +46,6 @@ echo-*.tar
 # Temporary files, for example, from tests.
 /tmp/
 
-# escript file
+# escript files
 echo
+broadcast

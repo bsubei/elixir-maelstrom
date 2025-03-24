@@ -1,7 +1,10 @@
 defmodule MaelstromTutorial.MixProject do
   use Mix.Project
 
-  @main_module_mapping %{"echo" => MaelstromTutorial.EchoServer.Server}
+  @main_module_mapping %{
+    "echo" => MaelstromTutorial.EchoServer.Server,
+    "broadcast" => MaelstromTutorial.BroadcastServer.Server
+  }
 
   def project do
     [

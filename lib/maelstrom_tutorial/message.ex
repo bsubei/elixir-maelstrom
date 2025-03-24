@@ -146,6 +146,99 @@ defmodule MaelstromTutorial.Message do
       end
     end
 
+    defmodule Topology do
+      @all_keys [:type, :topology, :msg_id]
+      @enforce_keys @all_keys
+      @derive [Poison.Encoder]
+      defstruct @all_keys
+
+      @type t :: %__MODULE__{
+              type: String.t(),
+              topology: list(Types.node_id_t()),
+              msg_id: Types.msg_id_t()
+            }
+    end
+
+    defmodule TopologyOk do
+      @all_keys [:type, :in_reply_to, :msg_id]
+      @enforce_keys @all_keys
+      @derive [Poison.Encoder]
+      defstruct @all_keys
+
+      @type t :: %__MODULE__{
+              type: String.t(),
+              in_reply_to: Types.msg_id_t(),
+              msg_id: Types.msg_id_t()
+            }
+
+      @spec new(Types.msg_id_t()) :: t()
+      def new(in_reply_to) do
+        %__MODULE__{type: "topology_ok", msg_id: 0, in_reply_to: in_reply_to}
+      end
+    end
+
+    defmodule Broadcast do
+      @all_keys [:type, :message, :msg_id]
+      @enforce_keys @all_keys
+      @derive [Poison.Encoder]
+      defstruct @all_keys
+
+      @type t :: %__MODULE__{
+              type: String.t(),
+              message: String.t(),
+              msg_id: Types.msg_id_t()
+            }
+    end
+
+    defmodule BroadcastOk do
+      @all_keys [:type, :in_reply_to, :msg_id]
+      @enforce_keys @all_keys
+      @derive [Poison.Encoder]
+      defstruct @all_keys
+
+      @type t :: %__MODULE__{
+              type: String.t(),
+              in_reply_to: Types.msg_id_t(),
+              msg_id: Types.msg_id_t()
+            }
+
+      @spec new(Types.msg_id_t()) :: t()
+      def new(in_reply_to) do
+        %__MODULE__{type: "broadcast_ok", msg_id: 0, in_reply_to: in_reply_to}
+      end
+    end
+
+    defmodule Read do
+      @all_keys [:type, :msg_id]
+      @enforce_keys @all_keys
+      @derive [Poison.Encoder]
+      defstruct @all_keys
+
+      @type t :: %__MODULE__{
+              type: String.t(),
+              msg_id: Types.msg_id_t()
+            }
+    end
+
+    defmodule ReadOk do
+      @all_keys [:type, :messages, :in_reply_to, :msg_id]
+      @enforce_keys @all_keys
+      @derive [Poison.Encoder]
+      defstruct @all_keys
+
+      @type t :: %__MODULE__{
+              type: String.t(),
+              messages: list(term()),
+              in_reply_to: Types.msg_id_t(),
+              msg_id: Types.msg_id_t()
+            }
+
+      @spec new(list(term()), Types.msg_id_t()) :: t()
+      def new(messages, in_reply_to) do
+        %__MODULE__{type: "read_ok", messages: messages, msg_id: 0, in_reply_to: in_reply_to}
+      end
+    end
+
     defmodule Error do
       @all_keys [:type, :in_reply_to, :code, :text]
       @enforce_keys @all_keys
