@@ -155,10 +155,12 @@ defmodule MaelstromTutorial.BroadcastServer.Server do
             {:broadcast_ok_awaiting, {neighbor, message.body.msg_id, message}}
           )
 
-          put_in(state.node_state.unacked, &MapSet.put(&1, {neighbor, message.body.msg_id}))
-
+          update_in(
+            updated_state.node_state.unacked,
+            &MapSet.put(&1, {neighbor, message.body.msg_id})
+          )
           # The updated_state is accumulated (the msg_id counter is incremented) as we iterate until we return the final state.
-          send_message(updated_state, broadcast)
+          |> send_message(broadcast)
         end)
 
       %Body.BroadcastOk{} ->
@@ -192,5 +194,9 @@ defmodule MaelstromTutorial.BroadcastServer.Server do
   @spec log(binary()) :: :ok
   def log(data) do
     IO.puts(:stderr, data)
+  end
+
+  def stderr_inspect(data, opts) do
+    IO.inspect(:stderr, data, opts)
   end
 end
