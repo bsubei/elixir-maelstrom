@@ -113,22 +113,19 @@ defmodule MaelstromTutorial.BroadcastServer.Server do
           body: Body.TopologyOk.new(message.body.msg_id)
         }
 
-        send_message(state, reply)
+        state = send_message(state, reply)
 
         # TODO this atom conversion is a hack caused by the other hack in parsing where I use atoms.
         my_neighbors = Map.get(topology, String.to_existing_atom(state.node_state.node_id), [])
         put_in(state.node_state.my_neighbors, my_neighbors)
 
-      # Record this new number, reply broadcast_ok, then relay the broadcast to each neighbor except the sender, and kick off an internal :broadcast_ok_awaiting message to handle replies to each relayed broadcast.
+      # Reply broadcast_ok. If we haven't already seen this, record the new message then relay the broadcast to each neighbor except the sender, and kick off an internal :broadcast_ok_awaiting message to handle replies to each relayed broadcast.
       %Body.Broadcast{} ->
         # log(
         #   "STATE BEFORE: #{inspect(state)}\nmessages: #{inspect(state.node_state.messages)}\nnum: #{message.body.message}"
         # )
 
-        state = update_in(state.node_state.messages, &(&1 ++ [message.body.message]))
-        # log("STATE AFTER: #{inspect(state)}")
-
-        # Reply with a broadcast_ok.
+        # Reply with a broadcast_ok always (technically this is only necessary if the src is a client).
         reply = %Message{
           src: message.dest,
           dest: message.src,
@@ -137,34 +134,45 @@ defmodule MaelstromTutorial.BroadcastServer.Server do
 
         state = send_message(state, reply)
 
-        state.node_state.my_neighbors
-        |> Enum.reject(fn neighbor ->
-          neighbor == message.src || neighbor == state.node_state.node_id
-        end)
-        |> Enum.reduce(state, fn neighbor, updated_state ->
-          # Send out the same Broadcast message we got, but swap out the src and dest.
-          broadcast = %Message{
-            message
-            | src: state.node_state.node_id,
-              dest: neighbor
-          }
+        if Enum.member?(state.node_state.messages, message.body.message) do
+          # Do nothing else if we've already seen this message.
+          state
+        else
+          state = update_in(state.node_state.messages, &(&1 ++ [message.body.message]))
+          # log("STATE AFTER: #{inspect(state)}")
 
-          # Make sure we expect a reply and retry the same message if we don't. We do this by "registering" the message in a set that we'll be checking in the :broadcast_ok_awaiting handler.
-          GenServer.cast(
-            self(),
-            {:broadcast_ok_awaiting, {neighbor, message.body.msg_id, message}}
-          )
+          state.node_state.my_neighbors
+          |> Enum.reject(fn neighbor ->
+            neighbor == message.src || neighbor == state.node_state.node_id
+          end)
+          |> Enum.reduce(state, fn neighbor, updated_state ->
+            # Send out the same Broadcast message we got, but swap out the src and dest.
+            broadcast = %Message{
+              message
+              | src: state.node_state.node_id,
+                dest: neighbor
+            }
 
-          update_in(
-            updated_state.node_state.unacked,
-            &MapSet.put(&1, {neighbor, message.body.msg_id})
-          )
-          # The updated_state is accumulated (the msg_id counter is incremented) as we iterate until we return the final state.
-          |> send_message(broadcast)
-        end)
+            # Make sure we expect a reply and retry the same message if we don't. We do this by "registering" the message in a set that we'll be checking in the :broadcast_ok_awaiting handler.
+            updated_state =
+              update_in(
+                updated_state.node_state.unacked,
+                &MapSet.put(&1, {neighbor, message.body.msg_id})
+              )
+
+            Process.send_after(
+              self(),
+              {:cast, {:broadcast_ok_awaiting, {neighbor, message.body.msg_id, message}}},
+              @retry_timeout_ms
+            )
+
+            # The updated_state is accumulated (the msg_id counter is incremented) as we iterate until we return the final state.
+            send_message(updated_state, broadcast)
+          end)
+        end
 
       %Body.BroadcastOk{} ->
-        # Update the state such that we stop infinitely :broadcast_ok_awaiting looping.
+        # Update the state so that we stop infinitely :broadcast_ok_awaiting looping.
         update_in(state.node_state.unacked, fn unacked ->
           unacked |> MapSet.delete({message.src, message.body.in_reply_to})
         end)
