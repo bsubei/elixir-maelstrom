@@ -49,3 +49,4 @@ echo-*.tar
 # escript files
 echo
 broadcast
+g_set

@@ -3,7 +3,8 @@ defmodule MaelstromTutorial.MixProject do
 
   @main_module_mapping %{
     "echo" => MaelstromTutorial.EchoServer.Server,
-    "broadcast" => MaelstromTutorial.BroadcastServer.Server
+    "broadcast" => MaelstromTutorial.BroadcastServer.Server,
+    "g_set" => MaelstromTutorial.GSetServer.Server
   }
 
   def project do
