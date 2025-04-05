@@ -59,7 +59,7 @@ defmodule MaelstromTutorial.EchoServer.Server do
   #   Message.decode(data)
   # end
 
-  @spec send_message(t(), Message.t()) :: :ok
+  @spec send_message(t(), Message.t()) :: t()
   def send_message(state, message) do
     message = put_in(message.body.msg_id, state.node_state.current_msg_id)
 

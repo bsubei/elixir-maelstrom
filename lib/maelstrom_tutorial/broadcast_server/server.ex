@@ -25,6 +25,7 @@ defmodule MaelstromTutorial.BroadcastServer.Server do
     read_stdin_forever(pid)
   end
 
+  @spec read_stdin_forever(GenServer.server()) :: :ok
   def read_stdin_forever(pid) do
     Enum.each(IO.stream(), fn data ->
       GenServer.cast(pid, {:read_stdin, data})
@@ -37,45 +38,53 @@ defmodule MaelstromTutorial.BroadcastServer.Server do
     GenServer.start_link(__MODULE__, options)
   end
 
-  @impl true
+  @impl GenServer
+  @spec init(any()) :: {:ok, t()}
   def init(_) do
     log("Starting up MaelstromTutorial BroadcastServer")
     {:ok, %__MODULE__{node_state: Node.new()}}
   end
 
-  @impl true
-  def handle_cast({:read_stdin, input}, %__MODULE__{} = state) do
-    # log("READING FROM STDIN: #{input}")
-    # TODO consider using cast to handle the input asynchronously.
-    state = handle_input(state, input)
-    # log("DONE HANDLING INPUT, NEW STATE: #{inspect(state)}")
-
+  @impl GenServer
+  def handle_info({:broadcast_ok_awaiting, _} = broadcast_ok_awaiting_msg, state) do
+    # This handle_info is only necessary because I don't know how to send a :cast using Process.send_after.
+    GenServer.cast(self(), broadcast_ok_awaiting_msg)
     {:noreply, state}
   end
 
-  @impl true
+  @impl GenServer
+  def handle_cast({:read_stdin, input}, %__MODULE__{} = state) do
+    state = handle_input(state, input)
+    {:noreply, state}
+  end
+
+  @impl GenServer
   def handle_cast(
-        {:broadcast_ok_awaiting, {target, msg_id_awaiting, message}} = broadcast_awaiting_ok_msg,
+        {:broadcast_ok_awaiting, {target, message}} = broadcast_ok_awaiting_msg,
         %__MODULE__{} = state
       ) do
+    msg_id_awaiting = message.body.msg_id
+
     state =
       case state.node_state.unacked |> MapSet.member?({target, msg_id_awaiting}) do
         # We've already received a reply, no need to retry.
-        nil ->
-          # log(
-          #   "No need to retry broadcast to target #{target} with original msg id #{msg_id_awaiting}."
-          # )
+        false ->
+          log(
+            "No need to retry broadcast to target #{target} with original msg id #{msg_id_awaiting}."
+          )
 
           state
 
         # Retry sending the original broadcast message.
         _ ->
-          # TODO BUG HERE
-          # log("Relaying broadcast: #{inspect(message)}")
+          log(
+            "Retrying broadcast: #{inspect(message)} for msg awaiting: #{msg_id_awaiting} and target: #{target}"
+          )
 
-          # TODO I doubt this will work {:cast, msg}. If it doesn't just use a handle_info to convert to a cast.
-          # Process.send_after(self(), {:cast, broadcast_awaiting_ok_msg}, @retry_timeout_ms)
-          # send_message(state, message)
+          Process.send_after(self(), broadcast_ok_awaiting_msg, @retry_timeout_ms)
+
+          # NOTE: make sure our retried Broadcast message uses the same msg id as the original, because that's the msg id registered in the unacked.
+          :ok = send_message_without_id_update(message)
           state
       end
 
@@ -84,9 +93,7 @@ defmodule MaelstromTutorial.BroadcastServer.Server do
 
   @spec handle_input(t(), binary()) :: t()
   def handle_input(state, input) do
-    # log("RAW INPUT: #{input}")
     message = Message.decode(input)
-    # log("DECODED INPUT: #{inspect(message)}")
 
     case message.body do
       %Body.Init{} ->
@@ -121,11 +128,7 @@ defmodule MaelstromTutorial.BroadcastServer.Server do
 
       # Reply broadcast_ok. If we haven't already seen this, record the new message then relay the broadcast to each neighbor except the sender, and kick off an internal :broadcast_ok_awaiting message to handle replies to each relayed broadcast.
       %Body.Broadcast{} ->
-        # log(
-        #   "STATE BEFORE: #{inspect(state)}\nmessages: #{inspect(state.node_state.messages)}\nnum: #{message.body.message}"
-        # )
-
-        # Reply with a broadcast_ok always (technically this is only necessary if the src is a client).
+        # Reply with a broadcast_ok always.
         reply = %Message{
           src: message.dest,
           dest: message.src,
@@ -139,43 +142,49 @@ defmodule MaelstromTutorial.BroadcastServer.Server do
           state
         else
           state = update_in(state.node_state.messages, &(&1 ++ [message.body.message]))
-          # log("STATE AFTER: #{inspect(state)}")
 
           state.node_state.my_neighbors
           |> Enum.reject(fn neighbor ->
             neighbor == message.src || neighbor == state.node_state.node_id
           end)
           |> Enum.reduce(state, fn neighbor, updated_state ->
-            # Send out the same Broadcast message we got, but swap out the src and dest.
+            # Send out the same Broadcast message we got, but swap out the src and dest, and updated the message id.
             broadcast = %Message{
-              message
+              insert_message_id(updated_state, message)
               | src: state.node_state.node_id,
                 dest: neighbor
             }
 
-            # Make sure we expect a reply and retry the same message if we don't. We do this by "registering" the message in a set that we'll be checking in the :broadcast_ok_awaiting handler.
+            # Make sure we expect a reply and retry the same Broadcast message if we don't. We do this by "registering" the message in a set that we'll be checking in the :broadcast_ok_awaiting handler.
             updated_state =
               update_in(
                 updated_state.node_state.unacked,
-                &MapSet.put(&1, {neighbor, message.body.msg_id})
+                # Here, we store a tuple of: 1) the node id we're awaiting a BroadcastOk from, and 2) the current message id we're using for the broadcast, which we'll look for in in_reply_to in the broadcast_ok reply.
+                &MapSet.put(&1, {neighbor, state.node_state.current_msg_id})
               )
 
             Process.send_after(
               self(),
-              {:cast, {:broadcast_ok_awaiting, {neighbor, message.body.msg_id, message}}},
+              {:broadcast_ok_awaiting, {neighbor, broadcast}},
               @retry_timeout_ms
             )
 
             # The updated_state is accumulated (the msg_id counter is incremented) as we iterate until we return the final state.
+            log(
+              "Relaying broadcast to #{neighbor} the message #{broadcast.body.message} with msg id #{updated_state.node_state.current_msg_id}"
+            )
+
             send_message(updated_state, broadcast)
           end)
         end
 
       %Body.BroadcastOk{} ->
         # Update the state so that we stop infinitely :broadcast_ok_awaiting looping.
-        update_in(state.node_state.unacked, fn unacked ->
-          unacked |> MapSet.delete({message.src, message.body.in_reply_to})
-        end)
+        # TODO consider storing the reverse: "acked". So we don't try to broadcast again the same message. Might have to switch to using the "message" itself instead of msg id. But that might be better overall since it's clearly bug prone.
+        update_in(
+          state.node_state.unacked,
+          &MapSet.delete(&1, {message.src, message.body.in_reply_to})
+        )
 
       # Reply with read_ok and the list of messages we know about.
       %Body.Read{} ->
@@ -189,9 +198,13 @@ defmodule MaelstromTutorial.BroadcastServer.Server do
     end
   end
 
-  @spec send_message(t(), Message.t()) :: :ok
+  @spec insert_message_id(t(), Message.t()) :: Message.t()
+  def insert_message_id(state, message),
+    do: put_in(message.body.msg_id, state.node_state.current_msg_id)
+
+  @spec send_message(t(), Message.t()) :: t()
   def send_message(state, message) do
-    message = put_in(message.body.msg_id, state.node_state.current_msg_id)
+    message = insert_message_id(state, message)
 
     data = Message.encode(message)
     # log("SENDING REPLY: #{data}")
@@ -199,11 +212,18 @@ defmodule MaelstromTutorial.BroadcastServer.Server do
     update_in(state.node_state.current_msg_id, &(&1 + 1))
   end
 
+  @spec send_message_without_id_update(Message.t()) :: :ok
+  def send_message_without_id_update(message) do
+    data = Message.encode(message)
+    IO.puts(:stdio, data)
+  end
+
   @spec log(binary()) :: :ok
   def log(data) do
     IO.puts(:stderr, data)
   end
 
+  @spec stderr_inspect(any(), keyword()) :: any()
   def stderr_inspect(data, opts) do
     IO.inspect(:stderr, data, opts)
   end
