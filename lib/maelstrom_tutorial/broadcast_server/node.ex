@@ -1,5 +1,5 @@
 defmodule MaelstromTutorial.BroadcastServer.Node do
-  alias MaelstromTutorial.Message.Types
+  alias MaelstromTutorial.BroadcastServer.Message.Types
 
   @all_keys [:node_id, :node_ids, :current_msg_id, :messages, :my_neighbors, :unacked]
   @enforce_keys @all_keys

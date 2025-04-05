@@ -1,4 +1,4 @@
-defmodule MaelstromTutorial.Message do
+defmodule MaelstromTutorial.BroadcastServer.Message do
   require Logger
 
   defmodule Types do
@@ -23,8 +23,8 @@ defmodule MaelstromTutorial.Message do
     ## Examples
 
         iex> iodata = ~s({"src":"c0","dest":"n1","body":{"type":"error","text":"dunno","in_reply_to":2,"code":42}})
-        iex> %MaelstromTutorial.Message{src: "c0", dest: "n1", body: %MaelstromTutorial.Message.Body.Error{type: "error", in_reply_to: 2, code: 42, text: "dunno"}} = MaelstromTutorial.Message.decode(iodata)
-        iex> iodata == MaelstromTutorial.Message.encode(MaelstromTutorial.Message.decode(iodata))
+        iex> %MaelstromTutorial.BroadcastServer.Message{src: "c0", dest: "n1", body: %MaelstromTutorial.BroadcastServer.Message.Body.Error{type: "error", in_reply_to: 2, code: 42, text: "dunno"}} = MaelstromTutorial.BroadcastServer.Message.decode(iodata)
+        iex> iodata == MaelstromTutorial.BroadcastServer.Message.encode(MaelstromTutorial.BroadcastServer.Message.decode(iodata))
         true
 
   """
@@ -49,13 +49,13 @@ defmodule MaelstromTutorial.Message do
 
     ## Examples
 
-        iex> msg = %MaelstromTutorial.Message{src: "c0", dest: "n1", body: %MaelstromTutorial.Message.Body.Error{type: "error", in_reply_to: 2, code: 42, text: "dunno"}}
-        iex> ~s({"src":"c0","dest":"n1","body":{"type":"error","text":"dunno","in_reply_to":2,"code":42}}) = MaelstromTutorial.Message.encode(msg)
-        iex> msg == MaelstromTutorial.Message.decode(MaelstromTutorial.Message.encode(msg))
+        iex> msg = %MaelstromTutorial.BroadcastServer.Message{src: "c0", dest: "n1", body: %MaelstromTutorial.BroadcastServer.Message.Body.Error{type: "error", in_reply_to: 2, code: 42, text: "dunno"}}
+        iex> ~s({"src":"c0","dest":"n1","body":{"type":"error","text":"dunno","in_reply_to":2,"code":42}}) = MaelstromTutorial.BroadcastServer.Message.encode(msg)
+        iex> msg == MaelstromTutorial.BroadcastServer.Message.decode(MaelstromTutorial.BroadcastServer.Message.encode(msg))
         true
-        iex> msg = %MaelstromTutorial.Message{src: "c0", dest: "n1", body: %MaelstromTutorial.Message.Body.Echo{type: "echo", echo: "well hello there", msg_id: 555}}
-        iex> ~s({"src":"c0","dest":"n1","body":{"type":"echo","msg_id":555,"echo":"well hello there"}}) = MaelstromTutorial.Message.encode(msg)
-        iex> msg == MaelstromTutorial.Message.decode(MaelstromTutorial.Message.encode(msg))
+        iex> msg = %MaelstromTutorial.BroadcastServer.Message{src: "c0", dest: "n1", body: %MaelstromTutorial.BroadcastServer.Message.Body.Broadcast{type: "broadcast", message: 22, msg_id: 555}}
+        iex> ~s({"src":"c0","dest":"n1","body":{"type":"broadcast","msg_id":555,"message":22}}) = MaelstromTutorial.BroadcastServer.Message.encode(msg)
+        iex> msg == MaelstromTutorial.BroadcastServer.Message.decode(MaelstromTutorial.BroadcastServer.Message.encode(msg))
         true
 
   """
@@ -65,7 +65,16 @@ defmodule MaelstromTutorial.Message do
   end
 
   defmodule Body do
-    @type t :: Init.t() | InitOk.t() | Echo.t() | EchoOk.t() | Error.t()
+    @type t ::
+            Init.t()
+            | InitOk.t()
+            | Topology.t()
+            | TopologyOk.t()
+            | Broadcast.t()
+            | BroadcastOk.t()
+            | Read.t()
+            | ReadOk.t()
+            | Error.t()
 
     @doc ~S"""
       This is where we define the mapping between a body message's type as a string and the corresponding module.
@@ -75,9 +84,8 @@ defmodule MaelstromTutorial.Message do
       case type do
         "init" -> __MODULE__.Init
         "init_ok" -> __MODULE__.InitOk
-        "echo" -> __MODULE__.Echo
-        "echo_ok" -> __MODULE__.EchoOk
         "topology" -> __MODULE__.Topology
+        "topology_ok" -> __MODULE__.TopologyOk
         "broadcast" -> __MODULE__.Broadcast
         "broadcast_ok" -> __MODULE__.BroadcastOk
         "read" -> __MODULE__.Read
@@ -116,38 +124,6 @@ defmodule MaelstromTutorial.Message do
       @spec new(Types.msg_id_t()) :: t()
       def new(in_reply_to) do
         %__MODULE__{type: "init_ok", msg_id: 0, in_reply_to: in_reply_to}
-      end
-    end
-
-    defmodule Echo do
-      @all_keys [:type, :echo, :msg_id]
-      @enforce_keys @all_keys
-      @derive [Poison.Encoder]
-      defstruct @all_keys
-
-      @type t :: %__MODULE__{
-              type: String.t(),
-              echo: String.t(),
-              msg_id: Types.msg_id_t()
-            }
-    end
-
-    defmodule EchoOk do
-      @all_keys [:type, :echo, :in_reply_to, :msg_id]
-      @enforce_keys @all_keys
-      @derive [Poison.Encoder]
-      defstruct @all_keys
-
-      @type t :: %__MODULE__{
-              type: String.t(),
-              echo: String.t(),
-              in_reply_to: Types.msg_id_t(),
-              msg_id: Types.msg_id_t()
-            }
-
-      @spec new(String.t(), Types.msg_id_t()) :: t()
-      def new(echo, in_reply_to) do
-        %__MODULE__{type: "echo_ok", echo: echo, msg_id: 0, in_reply_to: in_reply_to}
       end
     end
 

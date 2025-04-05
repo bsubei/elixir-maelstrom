@@ -1,7 +1,5 @@
 defmodule MaelstromTutorial.EchoServer.Server do
-  alias MaelstromTutorial.Message
-  alias MaelstromTutorial.Message.Body
-  alias MaelstromTutorial.EchoServer.Node
+  alias MaelstromTutorial.EchoServer.{Message, Node}
   use GenServer
 
   # TODO use a byte buffer to handle incomplete messages.
@@ -81,14 +79,14 @@ defmodule MaelstromTutorial.EchoServer.Server do
     log("DECODED INPUT: #{inspect(message)}")
 
     case message.body do
-      %Body.Init{} ->
+      %Message.Body.Init{} ->
         node_id = message.body.node_id
         node_ids = message.body.node_ids
 
         reply = %Message{
           src: message.dest,
           dest: message.src,
-          body: Body.InitOk.new(message.body.msg_id)
+          body: Message.Body.InitOk.new(message.body.msg_id)
         }
 
         state = send_message(state, reply)
@@ -97,11 +95,11 @@ defmodule MaelstromTutorial.EchoServer.Server do
         state = put_in(state.node_state.node_id, node_id)
         put_in(state.node_state.node_ids, node_ids)
 
-      %Body.Echo{echo: echo} ->
+      %Message.Body.Echo{echo: echo} ->
         reply = %Message{
           src: message.dest,
           dest: message.src,
-          body: Body.EchoOk.new(echo, message.body.msg_id)
+          body: Message.Body.EchoOk.new(echo, message.body.msg_id)
         }
 
         send_message(state, reply)

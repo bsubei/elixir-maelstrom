@@ -1,7 +1,5 @@
 defmodule MaelstromTutorial.GSetServer.Server do
-  alias MaelstromTutorial.Message
-  alias MaelstromTutorial.Message.Body
-  alias MaelstromTutorial.GSetServer.Node
+  alias MaelstromTutorial.GSetServer.{Message, Node}
   use GenServer
 
   # TODO use a byte buffer to handle incomplete messages.
@@ -96,14 +94,14 @@ defmodule MaelstromTutorial.GSetServer.Server do
     message = Message.decode(input)
 
     case message.body do
-      %Body.Init{} ->
+      %Message.Body.Init{} ->
         node_id = message.body.node_id
         node_ids = message.body.node_ids
 
         reply = %Message{
           src: message.dest,
           dest: message.src,
-          body: Body.InitOk.new(message.body.msg_id)
+          body: Message.Body.InitOk.new(message.body.msg_id)
         }
 
         state = send_message(state, reply)
@@ -113,11 +111,11 @@ defmodule MaelstromTutorial.GSetServer.Server do
         put_in(state.node_state.node_ids, node_ids)
 
       # Reply with topology_ok and then set our neighbors based on the given topology.
-      %Body.Topology{topology: topology} ->
+      %Message.Body.Topology{topology: topology} ->
         reply = %Message{
           src: message.dest,
           dest: message.src,
-          body: Body.TopologyOk.new(message.body.msg_id)
+          body: Message.Body.TopologyOk.new(message.body.msg_id)
         }
 
         state = send_message(state, reply)
@@ -127,12 +125,12 @@ defmodule MaelstromTutorial.GSetServer.Server do
         put_in(state.node_state.my_neighbors, my_neighbors)
 
       # Reply broadcast_ok. If we haven't already seen this, record the new message then relay the broadcast to each neighbor except the sender, and kick off an internal :broadcast_ok_awaiting message to handle replies to each relayed broadcast.
-      %Body.Broadcast{} ->
+      %Message.Body.Broadcast{} ->
         # Reply with a broadcast_ok always.
         reply = %Message{
           src: message.dest,
           dest: message.src,
-          body: Body.BroadcastOk.new(message.body.msg_id)
+          body: Message.Body.BroadcastOk.new(message.body.msg_id)
         }
 
         state = send_message(state, reply)
@@ -178,7 +176,7 @@ defmodule MaelstromTutorial.GSetServer.Server do
           end)
         end
 
-      %Body.BroadcastOk{} ->
+      %Message.Body.BroadcastOk{} ->
         # Update the state so that we stop infinitely :broadcast_ok_awaiting looping.
         # TODO consider storing the reverse: "acked". So we don't try to broadcast again the same message. Might have to switch to using the "message" itself instead of msg id. But that might be better overall since it's clearly bug prone.
         update_in(
@@ -187,11 +185,11 @@ defmodule MaelstromTutorial.GSetServer.Server do
         )
 
       # Reply with read_ok and the list of messages we know about.
-      %Body.Read{} ->
+      %Message.Body.Read{} ->
         reply = %Message{
           src: message.dest,
           dest: message.src,
-          body: Body.ReadOk.new(state.node_state.messages, message.body.msg_id)
+          body: Message.Body.ReadOk.new(state.node_state.messages, message.body.msg_id)
         }
 
         send_message(state, reply)
