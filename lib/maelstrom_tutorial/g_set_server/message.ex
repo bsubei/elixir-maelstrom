@@ -65,7 +65,15 @@ defmodule MaelstromTutorial.GSetServer.Message do
   end
 
   defmodule Body do
-    @type t :: Init.t() | InitOk.t() | Echo.t() | EchoOk.t() | Error.t()
+    @type t ::
+            Init.t()
+            | InitOk.t()
+            | Add.t()
+            | AddOk.t()
+            | Read.t()
+            | ReadOk.t()
+            | Replicate.t()
+            | Error.t()
 
     @doc ~S"""
       This is where we define the mapping between a body message's type as a string and the corresponding module.
@@ -75,13 +83,11 @@ defmodule MaelstromTutorial.GSetServer.Message do
       case type do
         "init" -> __MODULE__.Init
         "init_ok" -> __MODULE__.InitOk
-        "echo" -> __MODULE__.Echo
-        "echo_ok" -> __MODULE__.EchoOk
-        "topology" -> __MODULE__.Topology
-        "broadcast" -> __MODULE__.Broadcast
-        "broadcast_ok" -> __MODULE__.BroadcastOk
+        "add" -> __MODULE__.Add
+        "add_ok" -> __MODULE__.AddOk
         "read" -> __MODULE__.Read
         "read_ok" -> __MODULE__.ReadOk
+        "replicate" -> __MODULE__.Replicate
         "error" -> __MODULE__.Error
         _ -> raise "Unknown message type: #{type}"
       end
@@ -119,97 +125,34 @@ defmodule MaelstromTutorial.GSetServer.Message do
       end
     end
 
-    defmodule Echo do
-      @all_keys [:type, :echo, :msg_id]
+    defmodule Add do
+      @all_keys [:type, :element, :msg_id]
       @enforce_keys @all_keys
       @derive [Poison.Encoder]
       defstruct @all_keys
 
       @type t :: %__MODULE__{
               type: String.t(),
-              echo: String.t(),
+              element: any(),
               msg_id: Types.msg_id_t()
             }
     end
 
-    defmodule EchoOk do
-      @all_keys [:type, :echo, :in_reply_to, :msg_id]
+    defmodule AddOk do
+      @all_keys [:type, :msg_id, :in_reply_to]
       @enforce_keys @all_keys
       @derive [Poison.Encoder]
       defstruct @all_keys
 
       @type t :: %__MODULE__{
               type: String.t(),
-              echo: String.t(),
-              in_reply_to: Types.msg_id_t(),
-              msg_id: Types.msg_id_t()
-            }
-
-      @spec new(String.t(), Types.msg_id_t()) :: t()
-      def new(echo, in_reply_to) do
-        %__MODULE__{type: "echo_ok", echo: echo, msg_id: 0, in_reply_to: in_reply_to}
-      end
-    end
-
-    defmodule Topology do
-      @all_keys [:type, :topology, :msg_id]
-      @enforce_keys @all_keys
-      @derive [Poison.Encoder]
-      defstruct @all_keys
-
-      @type t :: %__MODULE__{
-              type: String.t(),
-              topology: %{Types.node_id_t() => list(Types.node_id_t())},
-              msg_id: Types.msg_id_t()
-            }
-    end
-
-    defmodule TopologyOk do
-      @all_keys [:type, :in_reply_to, :msg_id]
-      @enforce_keys @all_keys
-      @derive [Poison.Encoder]
-      defstruct @all_keys
-
-      @type t :: %__MODULE__{
-              type: String.t(),
-              in_reply_to: Types.msg_id_t(),
-              msg_id: Types.msg_id_t()
+              msg_id: Types.msg_id_t(),
+              in_reply_to: Types.msg_id_t()
             }
 
       @spec new(Types.msg_id_t()) :: t()
       def new(in_reply_to) do
-        %__MODULE__{type: "topology_ok", msg_id: 0, in_reply_to: in_reply_to}
-      end
-    end
-
-    defmodule Broadcast do
-      @all_keys [:type, :message, :msg_id]
-      @enforce_keys @all_keys
-      @derive [Poison.Encoder]
-      defstruct @all_keys
-
-      @type t :: %__MODULE__{
-              type: String.t(),
-              message: String.t(),
-              msg_id: Types.msg_id_t()
-            }
-    end
-
-    defmodule BroadcastOk do
-      @all_keys [:type, :in_reply_to, :msg_id]
-      @enforce_keys @all_keys
-      @derive [Poison.Encoder]
-      defstruct @all_keys
-
-      @type t :: %__MODULE__{
-              type: String.t(),
-              in_reply_to: Types.msg_id_t(),
-              msg_id: Types.msg_id_t()
-            }
-
-      @spec new(Types.msg_id_t()) :: t()
-      def new(in_reply_to) do
-        %__MODULE__{type: "broadcast_ok", msg_id: 0, in_reply_to: in_reply_to}
+        %__MODULE__{type: "add_ok", msg_id: 0, in_reply_to: in_reply_to}
       end
     end
 
@@ -226,21 +169,39 @@ defmodule MaelstromTutorial.GSetServer.Message do
     end
 
     defmodule ReadOk do
-      @all_keys [:type, :messages, :in_reply_to, :msg_id]
+      @all_keys [:type, :value, :in_reply_to, :msg_id]
       @enforce_keys @all_keys
       @derive [Poison.Encoder]
       defstruct @all_keys
 
       @type t :: %__MODULE__{
               type: String.t(),
-              messages: list(integer()),
-              in_reply_to: Types.msg_id_t(),
-              msg_id: Types.msg_id_t()
+              value: list(any()),
+              msg_id: Types.msg_id_t(),
+              in_reply_to: Types.msg_id_t()
             }
 
-      @spec new(list(integer()), Types.msg_id_t()) :: t()
-      def new(messages, in_reply_to) do
-        %__MODULE__{type: "read_ok", messages: messages, msg_id: 0, in_reply_to: in_reply_to}
+      @spec new(list(any()), Types.msg_id_t()) :: t()
+      def new(value, in_reply_to) do
+        %__MODULE__{type: "read_ok", value: value, msg_id: 0, in_reply_to: in_reply_to}
+      end
+    end
+
+    defmodule Replicate do
+      @all_keys [:type, :msg_id, :gset]
+      @enforce_keys @all_keys
+      @derive [Poison.Encoder]
+      defstruct @all_keys
+
+      @type t :: %__MODULE__{
+              type: String.t(),
+              msg_id: Types.msg_id_t(),
+              gset: list(any())
+            }
+
+      @spec new(list(any())) :: t()
+      def new(gset) do
+        %__MODULE__{type: "replicate", gset: gset, msg_id: 0}
       end
     end
 
