@@ -21,6 +21,8 @@ elif [ "$1" = "broadcast" ]; then
   $MAELSTROM test -w broadcast --bin "${BINARY}" --time-limit 10 --log-stderr --rate 100 --node-count 5 --nemesis partition
 elif [ "$1" = "g_set" ]; then
   $MAELSTROM test -w g-set --bin "${BINARY}" --time-limit 10 --log-stderr --rate 10 --node-count 5 --nemesis partition
+elif [ "$1" = "g_counter" ]; then
+  $MAELSTROM test -w g-counter --bin "${BINARY}" --time-limit 10 --log-stderr --rate 10 --node-count 5 --nemesis partition
 else
   echo "unknown command: '$1'"
 fi
