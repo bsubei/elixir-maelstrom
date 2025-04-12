@@ -146,7 +146,7 @@ defmodule MaelstromTutorial.BroadcastServer.Server do
             neighbor == message.src || neighbor == state.node_state.node_id
           end)
           |> Enum.reduce(state, fn neighbor, updated_state ->
-            # Send out the same Broadcast message we got, but swap out the src and dest, and updated the message id.
+            # Send out the same Broadcast message we got, but swap out the src and dest, and the updated message id.
             broadcast = %Message{
               insert_message_id(updated_state, message)
               | src: state.node_state.node_id,

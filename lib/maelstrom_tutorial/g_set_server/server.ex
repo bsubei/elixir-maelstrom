@@ -27,7 +27,6 @@ defmodule MaelstromTutorial.GSetServer.Server do
   def read_stdin_forever(pid) do
     Enum.each(IO.stream(), fn data ->
       GenServer.cast(pid, {:read_stdin, data})
-      # log("STREAMING DATA: #{data}")
     end)
   end
 
@@ -48,7 +47,7 @@ defmodule MaelstromTutorial.GSetServer.Server do
     # Keep running this on a timer forever.
     Process.send_after(self(), :replicate, @periodic_ms)
 
-    # Send all the neighbors our current gset using an internal "replicate" message.
+    # Send our current gset to all of our neighbors using an internal "replicate" message.
     state =
       state.node_state.node_ids
       |> Enum.reject(&(&1 == state.node_state.node_id))
@@ -59,7 +58,6 @@ defmodule MaelstromTutorial.GSetServer.Server do
           body: Message.Body.Replicate.new(MapSet.to_list(state.node_state.gset))
         }
 
-        # log("SENDING REPLICATE: #{inspect(message)}")
         send_message(updated_state, message)
       end)
 
@@ -132,7 +130,6 @@ defmodule MaelstromTutorial.GSetServer.Server do
     message = insert_message_id(state, message)
 
     data = Message.encode(message)
-    # log("SENDING MESSAGE: #{data}")
     :ok = IO.puts(:stdio, data)
     update_in(state.node_state.current_msg_id, &(&1 + 1))
   end
